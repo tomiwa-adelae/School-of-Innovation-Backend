@@ -1,0 +1,255 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String?
+  refreshToken String?
+  provider     String   @default("local")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  role         String
+
+  firstName String
+  lastName  String
+
+  emailVerified    Boolean   @default(false)
+  resetOTP         String?
+  resetOTPExpiry   DateTime?
+  verificationCode String?
+
+  gender  String?
+  dob     String?
+  address String?
+
+  username String @unique
+
+  phoneNumber String?
+  city        String?
+  state       String?
+  country     String?
+
+  image      String?
+  joinedDate String?
+
+  isDeleted           Boolean @default(false)
+  onboardingCompleted Boolean @default(false)
+  instructorStatus    String? // null | PENDING | APPROVED | REJECTED
+
+  bio       String?
+  interests String[]
+
+  admin       Admin?
+  roles       UserRole[]
+  courses     Course[]
+  enrollments Enrollment[]
+}
+
+enum AdminPosition {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+}
+
+model Admin {
+  id        String        @id @default(uuid())
+  userId    String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  position  AdminPosition @default(ADMIN)
+  user      User          @relation(fields: [userId], references: [id])
+}
+
+model UserRole {
+  id        String     @id @default(uuid())
+  userId    String
+  role      SystemRole
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, role]) // prevent duplicates
+}
+
+enum SystemRole {
+  ADMINISTRATOR
+  CLIENT
+  PROFESSIONAL
+  USER
+  CREATORS
+  BRAND
+}
+
+// ─── Course Enums ─────────────────────────────────────────────────────────────
+
+enum CourseStatus {
+  DRAFT
+  UNDER_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+enum PricingType {
+  FREE
+  PAID
+  SUBSCRIPTION
+}
+
+// ─── CourseCategory ───────────────────────────────────────────────────────────
+
+model CourseCategory {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  icon      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+}
+
+// ─── Course ───────────────────────────────────────────────────────────────────
+
+model Course {
+  id               String      @id @default(uuid())
+  title            String
+  slug             String      @unique
+  shortDescription String?
+  description      String?     // TipTap JSON string
+  thumbnail        String?
+  previewVideo     String?
+  level            CourseLevel @default(ALL_LEVELS)
+  language         String      @default("English")
+  status           CourseStatus @default(DRAFT)
+  pricingType      PricingType @default(FREE)
+  price            Float?
+  currency         String?     @default("USD")
+  tags             String[]
+  learningOutcomes String[]
+  requirements     String[]
+  targetAudience   String[]
+  duration         Int         @default(0) // seconds (auto-computed from lessons)
+  isDeleted        Boolean     @default(false)
+  publishedAt      DateTime?
+
+  instructorId String
+  instructor   User            @relation(fields: [instructorId], references: [id])
+
+  categoryId String?
+  category   CourseCategory? @relation(fields: [categoryId], references: [id])
+
+  chapters    Chapter[]
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Chapter ──────────────────────────────────────────────────────────────────
+
+model Chapter {
+  id               String  @id @default(uuid())
+  title            String
+  shortDescription String?
+  description      String? // TipTap JSON string
+  order            Int
+  isPublished      Boolean @default(false)
+  isFree           Boolean @default(false)
+  isDeleted        Boolean @default(false)
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons Lesson[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Lesson ───────────────────────────────────────────────────────────────────
+
+model Lesson {
+  id               String  @id @default(uuid())
+  title            String
+  shortDescription String?
+  description      String? // TipTap JSON string (notes / transcript)
+  order            Int
+  duration         Int     @default(0) // seconds (extracted client-side)
+  videoUrl         String?
+  thumbnailUrl     String?
+  isPublished      Boolean @default(false)
+  isFree           Boolean @default(false)
+  isDownloadable   Boolean @default(false)
+  isDeleted        Boolean @default(false)
+
+  chapterId String
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  resources LessonResource[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── LessonResource ───────────────────────────────────────────────────────────
+
+model LessonResource {
+  id       String  @id @default(uuid())
+  name     String
+  url      String
+  type     String // pdf, zip, doc, etc.
+  size     Int? // bytes
+
+  lessonId String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Enrollment ───────────────────────────────────────────────────────────────
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+
+  // payment
+  paidAt         DateTime?
+  amountPaid     Float?
+  currency       String?
+  flwTransactionId String?   // Flutterwave transaction ID
+
+  // admin support
+  manuallyEnrolled   Boolean @default(false)   // admin granted access manually
+  manuallyEnrolledBy String? // admin userId who did it
+  adminNotes         String? // internal support note
+  paymentVerified    Boolean @default(false)   // admin confirmed payment
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
