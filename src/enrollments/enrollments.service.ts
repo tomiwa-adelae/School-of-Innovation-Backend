@@ -226,6 +226,166 @@ export class EnrollmentsService {
     });
   }
 
+  // ─── Progress methods ─────────────────────────────────────────────────────────
+
+  /**
+   * Toggle a lesson's completion status for the current user.
+   * Verifies enrollment before touching the completion record.
+   * Returns { completed: boolean }.
+   */
+  async toggleLessonCompletion(userId: string, lessonId: string) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId, isDeleted: false },
+      select: { id: true, chapter: { select: { courseId: true } } },
+    });
+    if (!lesson) throw new NotFoundException('Lesson not found');
+
+    const courseId = lesson.chapter.courseId;
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { id: true },
+    });
+    if (!enrollment) throw new ForbiddenException('Not enrolled in this course');
+
+    const existing = await this.prisma.lessonCompletion.findUnique({
+      where: { userId_lessonId: { userId, lessonId } },
+    });
+
+    if (existing) {
+      await this.prisma.lessonCompletion.delete({
+        where: { userId_lessonId: { userId, lessonId } },
+      });
+      return { completed: false, certificateIssued: false };
+    }
+
+    await this.prisma.lessonCompletion.create({
+      data: { userId, lessonId, enrollmentId: enrollment.id },
+    });
+
+    // Check if course is now 100% complete → auto-issue certificate
+    const allLessons = await this.prisma.lesson.findMany({
+      where: { isDeleted: false, chapter: { courseId, isDeleted: false } },
+      select: { id: true },
+    });
+    const completionCount = await this.prisma.lessonCompletion.count({
+      where: { userId, lessonId: { in: allLessons.map((l) => l.id) } },
+    });
+    let certificateIssued = false;
+    if (allLessons.length > 0 && completionCount === allLessons.length) {
+      const certNumber = `CERT-${userId.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+      await this.prisma.certificate.upsert({
+        where: { userId_courseId: { userId, courseId } },
+        create: { userId, courseId, certificateNumber: certNumber },
+        update: {},
+      });
+      certificateIssued = true;
+    }
+
+    return { completed: true, certificateIssued };
+  }
+
+  /** Returns completion data for one enrolled course. */
+  async getCourseProgress(userId: string, courseId: string) {
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { id: true },
+    });
+    if (!enrollment) throw new ForbiddenException('Not enrolled in this course');
+
+    const lessons = await this.prisma.lesson.findMany({
+      where: { isDeleted: false, chapter: { courseId, isDeleted: false } },
+      select: { id: true },
+    });
+
+    const lessonIds = lessons.map((l) => l.id);
+
+    const completions = await this.prisma.lessonCompletion.findMany({
+      where: { userId, lessonId: { in: lessonIds } },
+      select: { lessonId: true },
+    });
+
+    const completedLessonIds = completions.map((c) => c.lessonId);
+    const completedCount = completedLessonIds.length;
+    const totalLessons = lessons.length;
+    const percent =
+      totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+    return { completedLessonIds, totalLessons, completedCount, percent };
+  }
+
+  /** Returns progress across all enrolled courses — used by the Progress page. */
+  async getProgressOverview(userId: string) {
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        courseId: true,
+        course: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnail: true,
+            instructor: { select: { id: true, firstName: true, lastName: true } },
+            chapters: {
+              where: { isDeleted: false },
+              select: {
+                lessons: {
+                  where: { isDeleted: false },
+                  select: { id: true, duration: true },
+                },
+              },
+            },
+          },
+        },
+        lessonCompletions: {
+          orderBy: { completedAt: 'desc' },
+          select: { lessonId: true, completedAt: true },
+        },
+      },
+    });
+
+    const courses = enrollments.map((enrollment) => {
+      const allLessons = enrollment.course.chapters.flatMap((ch) => ch.lessons);
+      const totalLessons = allLessons.length;
+      const completedSet = new Set(
+        enrollment.lessonCompletions.map((c) => c.lessonId),
+      );
+      const completedLessons = completedSet.size;
+      const percent =
+        totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      const lastActivityAt =
+        enrollment.lessonCompletions.length > 0
+          ? enrollment.lessonCompletions[0].completedAt
+          : null;
+      const watchedSeconds = allLessons
+        .filter((l) => completedSet.has(l.id))
+        .reduce((sum, l) => sum + (l.duration ?? 0), 0);
+
+      return {
+        courseId: enrollment.courseId,
+        title: enrollment.course.title,
+        slug: enrollment.course.slug,
+        thumbnail: enrollment.course.thumbnail,
+        instructor: enrollment.course.instructor,
+        totalLessons,
+        completedLessons,
+        percent,
+        lastActivityAt,
+        watchedSeconds,
+      };
+    });
+
+    return {
+      courses,
+      totalEnrolled: courses.length,
+      totalCompletedLessons: courses.reduce((s, c) => s + c.completedLessons, 0),
+      totalWatchedSeconds: courses.reduce((s, c) => s + c.watchedSeconds, 0),
+    };
+  }
+
   // ─── Admin methods ───────────────────────────────────────────────────────────
 
   private ENROLLMENT_SELECT = {

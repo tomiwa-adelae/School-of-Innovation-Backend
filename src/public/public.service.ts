@@ -148,6 +148,18 @@ export class PublicCoursesService {
       })),
     }));
 
-    return { ...course, chapters: chaptersWithAccess };
+    // Compute review stats
+    const reviewStats = await this.prisma.courseReview.aggregate({
+      where: { courseId: course.id },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+
+    return {
+      ...course,
+      chapters: chaptersWithAccess,
+      avgRating: reviewStats._avg.rating,
+      reviewCount: reviewStats._count.id,
+    };
   }
 }

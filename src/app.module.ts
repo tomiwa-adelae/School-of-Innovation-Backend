@@ -9,6 +9,8 @@ import { UploadModule } from './upload/upload.module';
 import { CategoriesModule } from './categories/categories.module';
 import { PublicModule } from './public/public.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { CertificatesModule } from './certificates/certificates.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
     CategoriesModule,
     PublicModule,
     EnrollmentsModule,
+    CertificatesModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

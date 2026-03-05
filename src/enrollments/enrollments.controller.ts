@@ -81,6 +81,36 @@ export class EnrollmentsController {
     );
   }
 
+  // ─── Progress endpoints ───────────────────────────────────────────────────────
+
+  /** POST /enrollments/progress/:lessonId — toggle lesson complete/incomplete */
+  @Post('progress/:lessonId')
+  toggleLessonCompletion(
+    @CurrentUser() user: any,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return this.service.toggleLessonCompletion(user.id, lessonId);
+  }
+
+  /**
+   * GET /enrollments/progress/overview
+   * MUST be declared before progress/course/:courseId so "overview"
+   * is not matched as a courseId param.
+   */
+  @Get('progress/overview')
+  getProgressOverview(@CurrentUser() user: any) {
+    return this.service.getProgressOverview(user.id);
+  }
+
+  /** GET /enrollments/progress/course/:courseId — completion data for one course */
+  @Get('progress/course/:courseId')
+  getCourseProgress(
+    @CurrentUser() user: any,
+    @Param('courseId') courseId: string,
+  ) {
+    return this.service.getCourseProgress(user.id, courseId);
+  }
+
   // ─── Admin endpoints ─────────────────────────────────────────────────────────
 
   /**
