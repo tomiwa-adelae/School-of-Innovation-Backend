@@ -20,12 +20,21 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow server-to-server / SSR requests (no origin header)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      callback(new Error(`CORS: origin ${origin} is not allowed`));
+      console.log('Incoming Request Origin:', origin); // <--- Add this!
+      if (!origin || origin === 'null') return callback(null, true);
+
+      // Check if the current origin is in our allowed list
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.error(`CORS blocked for origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
     },
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   app.use(cookieParser());
