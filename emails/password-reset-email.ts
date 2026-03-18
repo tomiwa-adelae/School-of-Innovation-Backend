@@ -90,7 +90,7 @@ export const PasswordResetEmail = ({
     <div class="wrapper">
       <div class="container">
         <div class="header">
-          <h1>Nuvylux</h1>
+          <h1>School of Innovation</h1>
         </div>
         <div class="content">
           <h2>Password Reset</h2>
@@ -104,9 +104,9 @@ export const PasswordResetEmail = ({
           <p style="font-size: 14px; color: #666;">If you did not expect this change, please contact our support team immediately.</p>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Nuvylux Global | AURANOVA Group</p>
+          <p>&copy; ${new Date().getFullYear()} School of Innovation Global | AURANOVA Group</p>
           <p>This is an automated notification. Please do not reply to this email.</p>
-          <p><a href="mailto:support@nuvylux.com">Contact Support</a></p>
+          <p><a href="mailto:support@School of Innovation.com">Contact Support</a></p>
         </div>
       </div>
     </div>

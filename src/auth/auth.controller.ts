@@ -25,8 +25,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Request() req, @Res() res: Response) {
-    const { access_token, refresh_token, user } =
-      await this.authService.login(req.user);
+    const { access_token, refresh_token, user } = await this.authService.login(
+      req.user,
+    );
 
     const cookieOptions = this.authService.getCookieOptions();
     const sessionMs = this.authService.getSessionMs(); // 30 days
@@ -70,7 +71,10 @@ export class AuthController {
       maxAge: sessionMs,
     });
 
-    return res.json({ user, message: `Welcome to Nuvylux, ${user.firstName}` });
+    return res.json({
+      user,
+      message: `Welcome to School of Innovation, ${user.firstName}`,
+    });
   }
 
   @Post('logout')

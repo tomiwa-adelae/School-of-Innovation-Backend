@@ -33,7 +33,7 @@ export const BookingStatusEmail = ({
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Booking Update — Nuvylux</title>
+    <title>Booking Update — School of Innovation</title>
     <style>
       body {
         font-family: 'Playfair Display', 'Georgia', serif;
@@ -140,7 +140,7 @@ export const BookingStatusEmail = ({
     <div class="wrapper">
       <div class="container">
         <div class="header">
-          <h1>Nuvylux</h1>
+          <h1>School of Innovation</h1>
         </div>
         <div class="content">
           <h2>Booking Update</h2>
@@ -167,12 +167,12 @@ export const BookingStatusEmail = ({
           }
 
           <p style="margin-top: 40px;">Best regards,</p>
-          <p><strong>The Nuvylux Team</strong></p>
+          <p><strong>The School of Innovation Team</strong></p>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Nuvylux Global | AURANOVA Group</p>
+          <p>&copy; ${new Date().getFullYear()} School of Innovation Global | AURANOVA Group</p>
           <p>Lagos &bull; Abuja &bull; Ibadan</p>
-          <p>If you have any questions, please <a href="mailto:support@nuvylux.com">contact support</a>.</p>
+          <p>If you have any questions, please <a href="mailto:support@School of Innovation.com">contact support</a>.</p>
         </div>
       </div>
     </div>

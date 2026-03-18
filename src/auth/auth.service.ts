@@ -80,7 +80,7 @@ export class AuthService {
   // them silently so the user never notices.
   generateAccessToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,   // validated by JwtStrategy
+      secret: process.env.JWT_SECRET, // validated by JwtStrategy
       expiresIn: '15m',
     });
   }
@@ -181,10 +181,10 @@ export class AuthService {
         {
           From: {
             Email: process.env.SENDER_EMAIL_ADDRESS,
-            Name: 'Nuvylux',
+            Name: 'School of Innovation',
           },
           To: [{ Email: user.email, Name: user.firstName }],
-          Subject: `Welcome to Nuvylux, ${user.firstName}`,
+          Subject: `Welcome to School of Innovation, ${user.firstName}`,
           HTMLPart: WelcomeEmail({
             firstName: user.firstName,
           }),
@@ -228,8 +228,10 @@ export class AuthService {
     });
 
     if (!user) throw new NotFoundException('No account with that email');
-    if (!user.resetOTP) throw new UnauthorizedException('Invalid or expired OTP');
-    if (user.resetOTPExpiry! < new Date()) throw new UnauthorizedException('OTP has expired');
+    if (!user.resetOTP)
+      throw new UnauthorizedException('Invalid or expired OTP');
+    if (user.resetOTPExpiry! < new Date())
+      throw new UnauthorizedException('OTP has expired');
 
     const isValid = await bcrypt.compare(otp, user.resetOTP);
     if (!isValid) throw new UnauthorizedException('Invalid OTP');
@@ -256,8 +258,10 @@ export class AuthService {
     });
 
     if (!user) throw new NotFoundException('No account with that email');
-    if (!user.resetOTP) throw new UnauthorizedException('Invalid or expired OTP');
-    if (user.resetOTPExpiry! < new Date()) throw new UnauthorizedException('OTP has expired');
+    if (!user.resetOTP)
+      throw new UnauthorizedException('Invalid or expired OTP');
+    if (user.resetOTPExpiry! < new Date())
+      throw new UnauthorizedException('OTP has expired');
 
     const isValid = await bcrypt.compare(otp, user.resetOTP);
     if (!isValid) throw new UnauthorizedException('Invalid OTP');
@@ -293,7 +297,7 @@ export class AuthService {
         {
           From: {
             Email: process.env.SENDER_EMAIL_ADDRESS,
-            Name: 'Nuvylux',
+            Name: 'School of Innovation',
           },
           To: [{ Email: email, Name: user.firstName }],
           Subject: `Password Reset Code`,
@@ -375,7 +379,7 @@ export class AuthService {
 
     // Step 4 — rotate tokens
     const newPayload: JwtPayload = { sub: user.id, email: user.email };
-    const accessToken = this.generateAccessToken(newPayload);      // JWT_SECRET
+    const accessToken = this.generateAccessToken(newPayload); // JWT_SECRET
     const newRefreshToken = this.generateRefreshToken(newPayload); // JWT_REFRESH_SECRET
 
     await this.prisma.user.update({
