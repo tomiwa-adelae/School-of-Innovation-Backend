@@ -2,10 +2,14 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { notDeleted } from 'src/utils/prismaFilters';
 import { CompleteOnboardingDto } from './dto/complete-onboarding.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -107,6 +111,78 @@ export class UsersService {
         instructorStatus: true,
       },
     });
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, ...notDeleted() },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.firstName !== undefined && { firstName: dto.firstName }),
+        ...(dto.lastName !== undefined && { lastName: dto.lastName }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        ...(dto.phoneNumber !== undefined && { phoneNumber: dto.phoneNumber }),
+        ...(dto.gender !== undefined && { gender: dto.gender }),
+        ...(dto.dob !== undefined && { dob: dto.dob }),
+        ...(dto.city !== undefined && { city: dto.city }),
+        ...(dto.state !== undefined && { state: dto.state }),
+        ...(dto.country !== undefined && { country: dto.country }),
+        ...(dto.address !== undefined && { address: dto.address }),
+        ...(dto.bio !== undefined && { bio: dto.bio }),
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        image: true,
+        phoneNumber: true,
+        gender: true,
+        dob: true,
+        city: true,
+        state: true,
+        country: true,
+        address: true,
+        bio: true,
+        interests: true,
+        role: true,
+        onboardingCompleted: true,
+        instructorStatus: true,
+        createdAt: true,
+      },
+    });
+
+    return { user: updated, message: 'Profile updated successfully' };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, ...notDeleted() },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.password) {
+      throw new BadRequestException('This account uses social login and has no password to update');
+    }
+
+    const isMatch = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!isMatch) throw new UnauthorizedException('Current password is incorrect');
+
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    return { message: 'Password changed successfully' };
   }
 
   async getDashboardStats() {

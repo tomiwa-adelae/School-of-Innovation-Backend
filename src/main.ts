@@ -20,7 +20,6 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      console.log('Incoming Request Origin:', origin); // <--- Add this!
       if (!origin || origin === 'null') return callback(null, true);
 
       // Check if the current origin is in our allowed list

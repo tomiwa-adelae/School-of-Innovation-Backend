@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CompleteOnboardingDto } from './dto/complete-onboarding.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/decorators/current-user.decorator';
 import { TokenPayload } from 'src/auth/token.service';
@@ -64,10 +66,7 @@ export class UsersController {
 
   /** Admin: reject instructor */
   @Patch(':id/reject')
-  rejectInstructor(
-    @CurrentUser() user: TokenPayload,
-    @Param('id') id: string,
-  ) {
+  rejectInstructor(@CurrentUser() user: TokenPayload, @Param('id') id: string) {
     if (user.role !== 'ADMINISTRATOR') {
       throw new ForbiddenException('Admin access required');
     }
