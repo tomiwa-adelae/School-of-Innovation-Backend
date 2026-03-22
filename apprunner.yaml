@@ -4,10 +4,7 @@ runtime: nodejs22
 build:
   commands:
     build:
-      - npm install -g pnpm
-      - pnpm install --frozen-lockfile
-      - pnpm prisma generate
-      - pnpm build
+      - npm install -g pnpm && pnpm install --frozen-lockfile && pnpm prisma generate && pnpm build
 
 run:
   command: node dist/main.js
