@@ -1,0 +1,19 @@
+version: 1.0
+runtime: nodejs22
+
+build:
+  commands:
+    build:
+      - npm install -g pnpm
+      - pnpm install --frozen-lockfile
+      - pnpm prisma generate
+      - pnpm build
+
+run:
+  command: node dist/main.js
+  network:
+    port: 8000
+    env: PORT
+  env:
+    - name: NODE_ENV
+      value: production
