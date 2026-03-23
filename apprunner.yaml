@@ -4,10 +4,10 @@ runtime: nodejs22
 build:
   commands:
     build:
-      - corepack enable && pnpm install --frozen-lockfile && pnpm prisma generate && pnpm build
+      - corepack enable && pnpm install --frozen-lockfile && pnpm prisma generate
 
 run:
-  command: node dist/main.js
+  command: sh -c "./node_modules/.bin/nest build && node dist/main.js"
   network:
     port: 8000
     env: PORT
